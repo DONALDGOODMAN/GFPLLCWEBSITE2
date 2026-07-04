@@ -1,0 +1,7 @@
+.env
+.env.*
+.dev.vars
+.wrangler/
+node_modules/
+.image-slots.state.json
+.DS_Store
