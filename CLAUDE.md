@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-A single-page static marketing website for **GFP, LLC**, an engineering consulting and building commissioning firm (Cleveland, OH). No build system, no package manager, no backend. The page is plain HTML/CSS/JS plus one small React island.
+A single-page static marketing website for **GFP, LLC**, an engineering consulting and building commissioning firm (Hollidaysburg, PA). No build system, no package manager, no backend. The page is plain HTML/CSS/JS plus one small React island.
 
 ## Layout
 
@@ -54,3 +54,11 @@ The page is built from three layers that stay deliberately separate:
 - `screenshots/*.png` are design-iteration captures, not site assets — the page does not reference them.
 - Section content lives directly in `index.html` (services, process, capabilities, about, contact). The contact form is client-side only; submit just hides the form and shows a success message — there is no backend wired up.
 - Cache-busting is manual via `?v=N` query strings on `assets/styles.css` and `assets/main.js`; bump them when changing those files.
+
+## Cloudflare deployment
+
+Deployed on Cloudflare Pages. Credentials live in a local, gitignored `.env` (`CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`) — never commit these or print them to a terminal/log.
+
+- **Verify a token against `/client/v4/accounts/{account_id}/tokens/verify`, not `/client/v4/user/tokens/verify`.** For this account, the user-scoped endpoint returns `{"success":false,"errors":[{"code":1000,"message":"Invalid API Token"}]}` for a token that is genuinely valid and active — confirmed only by the account-scoped endpoint (`{"success":true,"messages":[{"message":"This API Token is valid and active"}]}`). Don't conclude a token is bad from the user-scoped endpoint alone; cross-check the account-scoped one before assuming the token/setup is broken.
+- **`.env` files saved via Windows Notepad have CRLF line endings.** A trailing `\r` gets silently appended to values when the file is read with plain `source .env` / `. .env` in bash, which can look like "the token is wrong" when it isn't. Read env files with the CR stripped: `source <(tr -d '\r' < .env)`, or extract a single value with `grep '^KEY=' .env | cut -d'=' -f2- | tr -d '\r\n'`.
+- **Never print, echo, or partially reveal secret values** (not even first/last N characters) when debugging — check length, character class (e.g. `LC_ALL=C grep -P '[^\x20-\x7E]'` for hidden/non-ASCII chars), or byte-count instead. If a secret is ever accidentally exposed (even partially) in a terminal output or chat, treat it as compromised and roll it immediately rather than continuing to use it.

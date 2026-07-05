@@ -1,0 +1,90 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+jobs:
+  test:
+    name: Smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run smoke test
+        run: bash scripts/smoke-test.sh .
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage site files
+        run: |
+          mkdir -p stage
+          cp index.html stage/
+          cp -r assets stage/
+
+      - name: Record current production deployment (for rollback)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          PREV_ID=$(curl -s \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/gfp-llc" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            | node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d);console.log(j.result.latest_deployment ? j.result.latest_deployment.id : '')})")
+          echo "prev_deployment_id=$PREV_ID" >> "$GITHUB_ENV"
+          echo "Previous production deployment: $PREV_ID"
+
+      - name: Deploy to Cloudflare Pages
+        id: deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          npx wrangler pages deploy stage --project-name=gfp-llc --commit-dirty=true | tee deploy_output.txt
+          URL=$(grep -oE 'https://[a-z0-9]+\.gfp-llc\.pages\.dev' deploy_output.txt | tail -1)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Post-deploy health check
+        id: health
+        run: |
+          URL="${{ steps.deploy.outputs.url }}"
+          if [ -z "$URL" ]; then
+            echo "Could not determine deployment URL from wrangler output." >&2
+            exit 1
+          fi
+          STATUS=$(curl -s -o /tmp/body.html -w "%{http_code}" "$URL")
+          SIZE=$(wc -c < /tmp/body.html)
+          echo "HTTP status: $STATUS, body size: $SIZE bytes"
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed: HTTP $STATUS from $URL" >&2
+            exit 1
+          fi
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "Health check failed: response body too small ($SIZE bytes)" >&2
+            exit 1
+          fi
+          if ! grep -qi "GFP" /tmp/body.html; then
+            echo "Health check failed: expected content marker not found" >&2
+            exit 1
+          fi
+          echo "Health check passed: $URL is live and serving expected content."
+
+      - name: Roll back on failed health check
+        if: failure() && steps.deploy.outcome == 'success'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$prev_deployment_id" ]; then
+            echo "No previous deployment recorded — cannot auto-rollback. Check the Cloudflare dashboard manually." >&2
+            exit 0
+          fi
+          echo "Health check failed — rolling production back to $prev_deployment_id"
+          curl -s -X POST \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/gfp-llc/deployments/$prev_deployment_id/rollback" \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"
