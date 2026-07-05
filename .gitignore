@@ -5,3 +5,7 @@
 node_modules/
 .image-slots.state.json
 .DS_Store
+
+.dev.vars*
+!.dev.vars.example
+!.env.example
