@@ -29,7 +29,7 @@ python3 -m http.server 8000
 # then open http://localhost:8000/
 ```
 
-Use a server rather than `file://` — the page fetches sidecar JSON and uses modules that browsers block on `file://`. There are no tests, linter, or CI.
+Use a server rather than `file://` — the page fetches sidecar JSON and uses modules that browsers block on `file://`. There is no linter; `scripts/smoke-test.sh` is a basic pre-deploy check, and `.github/workflows/deploy.yml` deploys only when run manually (see Deployment rules).
 
 ## Architecture
 
@@ -54,6 +54,31 @@ The page is built from three layers that stay deliberately separate:
 - `screenshots/*.png` are design-iteration captures, not site assets — the page does not reference them.
 - Section content lives directly in `index.html` (services, process, capabilities, about, contact). The contact form is client-side only; submit just hides the form and shows a success message — there is no backend wired up.
 - Cache-busting is manual via `?v=N` query strings on `assets/styles.css` and `assets/main.js`; bump them when changing those files.
+
+## Deployment rules (MANDATORY — read before any git push or deploy)
+
+The owner reviews every change before it goes live. These rules exist because changes were once
+pushed and auto-deployed to the live site without review. Do not repeat that.
+
+1. **Never deploy without explicit approval in the current conversation.** "Deploy", "publish",
+   "push it live", or "ship it" from the owner, given *after* they have reviewed the specific change,
+   is approval. Approval of wording or an idea is NOT approval to deploy. Approval does not carry
+   over to later changes.
+2. **Rollbacks are deploys too.** Rolling production back, re-running the workflow, or running
+   `wrangler pages deploy` / the `deploy-cloudflare` skill all require the same explicit approval.
+3. **Pushing to GitHub does not deploy** — `.github/workflows/deploy.yml` is `workflow_dispatch`
+   only. Never add `push` or `pull_request` triggers back. Even so, ask before pushing to `main`,
+   and say plainly what will happen.
+4. **Review locally first.** Show every change on localhost before asking to deploy: serve the repo
+   root (`python3 -m http.server 8000`, or the `gfp-site` config in `.claude/launch.json`) and open
+   http://localhost:8000/, or share desktop and mobile screenshots of the affected sections when
+   the owner can't open localhost. Run `bash scripts/smoke-test.sh .` before asking.
+5. **Only when approved, deploy by running the workflow by hand:**
+   - Production: `gh workflow run deploy.yml --ref main` (→ gfp-engineering.com)
+   - Hosted preview, only if the owner asks for one: `gh workflow run deploy.yml --ref preview`
+     (→ https://preview.gfp-llc.pages.dev, not indexed by search engines)
+   Then confirm the run succeeded and the change is visible on the live URL.
+6. **When unsure, ask.** If it's unclear whether an action changes what visitors see, stop and ask.
 
 ## Cloudflare deployment
 

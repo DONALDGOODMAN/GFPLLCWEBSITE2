@@ -5,6 +5,11 @@ description: Deploy this repo's static site (index.html + assets/) to the existi
 
 # Deploy to Cloudflare Pages
 
+> **Approval required.** Only deploy (or roll back) when the owner has explicitly said to deploy the
+> specific, already-reviewed change in the current conversation. Review on localhost first. See
+> "Deployment rules" in `CLAUDE.md` / `AGENTS.md`. Preferred route once approved:
+> `gh workflow run deploy.yml --ref main`.
+
 This repo is a static HTML/CSS/JS site with no build step (see `CLAUDE.md`/`AGENTS.md`). It's already
 connected to a live Cloudflare Pages project named **`gfp-llc`** (custom domains `gfp-engineering.com`
 and `www.gfp-engineering.com`), deployed via direct upload rather than a git-connected build.
