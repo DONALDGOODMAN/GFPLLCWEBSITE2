@@ -10,6 +10,11 @@ A single-page static marketing website for **GFP, LLC**, an engineering consulti
 
 ```
 index.html        # the page (must stay at repo root — see image-slot note)
+404.html          # real 404 page (without it Cloudflare Pages serves index.html for every unknown URL)
+robots.txt        # allows all crawlers (search + AI), points to the sitemap
+sitemap.xml       # single-URL sitemap — bump <lastmod> when page content changes
+llms.txt          # plain-language summary for AI assistants — keep facts in sync with index.html
+favicon.svg
 assets/           # all code
   styles.css
   main.js
@@ -41,13 +46,20 @@ The page is built from three layers that stay deliberately separate:
 
 2. **`<image-slot>` web component** — `assets/image-slot.js`. A user-fillable image placeholder: drag/drop or click-to-browse, with cover-mode reframe. It persists drops to a `.image-slots.state.json` sidecar via a host "omelette" runtime bridge (`window.omelette`), so filled images survive reloads and exports. **Outside that runtime it is read-only** — drops won't persist in a plain browser. Each slot needs a unique `id` for persistence; sidecar writes are only permitted at the project root, so `index.html` must stay at the repo root (this is why the page is not moved into a subfolder). See the usage block at the top of the file for all attributes (`shape`, `mask`, `fit`, `radius`, etc.).
 
-3. **Tweaks panel (React island)** — `tweaks-panel.jsx` + `tweaks-app.jsx`, mounted into `#tweaks-root`. React 18 + Babel standalone are loaded from unpkg CDN and transpiled in-browser (`<script type="text/babel">`). This panel is a live theme editor that repaints the vanilla page by setting CSS variables on `:root` (accent color → `--signal`/`--signal-deep`, paper tone, blueprint grid toggle). It does **not** render any page content — the marketing page works without it.
+3. **Tweaks panel (React island)** — `tweaks-panel.jsx` + `tweaks-app.jsx`, mounted into `#tweaks-root`. React 18 + Babel standalone (~3 MB) are loaded from unpkg CDN **only when the page runs inside the design tool's editor iframe** (`window.self !== window.top`), via a small inline loader at the bottom of `index.html` that then calls `Babel.transformScriptTags()`. Regular visitors never download them. This panel is a live theme editor that repaints the vanilla page by setting CSS variables on `:root` (accent color → `--signal`/`--signal-deep`, paper tone, blueprint grid toggle). It does **not** render any page content — the marketing page works without it.
    - `tweaks-panel.jsx` is the reusable shell + control primitives (`useTweaks`, `TweaksPanel`, `TweakColor`, `TweakRadio`, `TweakToggle`, etc.) and owns the host edit-mode protocol (`__activate_edit_mode` / `__edit_mode_*` postMessage handshake).
    - `tweaks-app.jsx` is the GFP-specific config: defaults live in the `/*EDITMODE-BEGIN*/ … /*EDITMODE-END*/` JSON block, which the host runtime reads/writes.
 
 ### Scaffold provenance
 
 `image-slot.js`, `tweaks-panel.jsx`, and `tweaks-app.jsx` are starter scaffolds from an "omelette" prototyping runtime (marked `@ds-adherence-ignore`, and they intentionally use raw hex/px). They assume a host bridge (`window.omelette`, postMessage edit-mode) that is absent in a plain static deploy — treat their persistence/edit features as no-ops outside that runtime.
+
+## SEO / AI visibility
+
+- Facts (credentials, services, contact, UEI/CAGE) appear in four places that must agree: visible page copy, the JSON-LD `@graph` in `<head>` (business, person, website, FAQPage), the FAQ section, and `llms.txt`. Change one → change all. Never add claims the owner hasn't confirmed.
+- FAQ answers in the JSON-LD `FAQPage` must match the visible `#faq` text word-for-word.
+- Every root file must be listed in the deploy staging step (`deploy.yml` and the skill's `deploy.sh`); `scripts/smoke-test.sh` enforces this, plus valid JSON-LD and a non-blocking robots.txt.
+- Fonts load via `<link>` in `<head>` (not `@import` in CSS) so they don't block rendering.
 
 ## Working in this repo
 

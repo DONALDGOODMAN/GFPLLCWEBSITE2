@@ -84,7 +84,7 @@ first:
 
 ```bash
 STAGE=$(mktemp -d)
-cp index.html "$STAGE/"
+cp index.html 404.html robots.txt sitemap.xml llms.txt favicon.svg "$STAGE/"
 cp -r assets "$STAGE/"
 ```
 

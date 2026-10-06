@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Stages only the real site files (index.html + assets/) into a clean temp dir
+# Stages only the real site files (index.html, root SEO files, assets/) into a clean temp dir
 # and deploys them to the gfp-llc Cloudflare Pages project via wrangler.
 # Usage: ./deploy.sh   (run from the repo root, or pass the repo path as $1)
 set -euo pipefail
@@ -27,7 +27,9 @@ export CLOUDFLARE_ACCOUNT_ID=$(grep '^CLOUDFLARE_ACCOUNT_ID=' "$ENV_FILE" | cut 
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 
-cp "$REPO_DIR/index.html" "$STAGE/"
+# Keep this list in sync with the "Stage site files" step in .github/workflows/deploy.yml
+SITE_FILES="index.html 404.html robots.txt sitemap.xml llms.txt favicon.svg"
+for f in $SITE_FILES; do cp "$REPO_DIR/$f" "$STAGE/"; done
 cp -r "$REPO_DIR/assets" "$STAGE/"
 
 wrangler pages deploy "$STAGE" --project-name="$PROJECT_NAME" --commit-dirty=true

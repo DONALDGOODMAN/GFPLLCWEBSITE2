@@ -3,7 +3,7 @@
    Spectral (serif display) · Space Mono (technical labels) · Hanken Grotesk (body)
    ========================================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Space+Mono:wght@400;700&family=Hanken+Grotesk:wght@300;400;500;600;700&display=swap');
+/* Fonts are loaded via <link> tags in the HTML <head> (non-blocking; was an @import here). */
 
 :root {
   /* core palette */
@@ -529,4 +529,25 @@ form.cform { display: grid; gap: 0; }
   .xw-foot .btn { justify-self: start; }
   .xw-col .cap-row { grid-template-columns: 40px 1fr; gap: 6px 14px; }
   .xw-col .cap-row .cs { grid-column: 2; }
+}
+
+/* ====================================================================== */
+/* FAQ                                                                    */
+/* ====================================================================== */
+.faq-list { border-top: 2px solid var(--ink); }
+.faq-item { border-bottom: 1px solid var(--line); }
+.faq-item summary {
+  display: grid; grid-template-columns: 54px 1fr 32px; gap: 20px; align-items: baseline;
+  padding: 24px 0; cursor: pointer; list-style: none;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item .fq-n { font-family: var(--ff-mono); font-size: 11px; color: var(--signal); letter-spacing: .1em; }
+.faq-item .fq-q { font-family: var(--ff-serif); font-size: clamp(19px, 2vw, 23px); font-weight: 400; letter-spacing: -.01em; }
+.faq-item .fq-x { font-family: var(--ff-mono); font-size: 20px; color: var(--text-muted); text-align: right; transition: transform .3s var(--ease); }
+.faq-item[open] .fq-x { transform: rotate(45deg); color: var(--signal); }
+.faq-item summary:hover .fq-q { color: var(--signal-deep); }
+.faq-item p { margin: 0 32px 28px 74px; color: var(--text-muted); max-width: 72ch; line-height: 1.65; }
+@media (max-width: 720px) {
+  .faq-item summary { grid-template-columns: 34px 1fr 24px; gap: 12px; }
+  .faq-item p { margin: 0 0 24px 46px; }
 }

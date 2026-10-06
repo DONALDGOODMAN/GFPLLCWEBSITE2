@@ -65,6 +65,57 @@ else
   pass "no placeholder/TODO markers found"
 fi
 
+# Root files for search engines / AI crawlers must exist and be the real thing
+# (Cloudflare Pages otherwise serves the homepage for any unknown path).
+for f in robots.txt sitemap.xml llms.txt 404.html favicon.svg; do
+  if [ -s "$REPO_DIR/$f" ] && ! grep -qi '<title>GFP, LLC — ' "$REPO_DIR/$f"; then
+    pass "root file present: $f"
+  else
+    fail "missing or invalid root file: $f"
+  fi
+done
+grep -q '^Sitemap: https://gfp-engineering.com/sitemap.xml' "$REPO_DIR/robots.txt" 2>/dev/null \
+  && pass "robots.txt points to sitemap" || fail "robots.txt has no Sitemap line"
+if grep -qiE '^Disallow: */ *$' "$REPO_DIR/robots.txt" 2>/dev/null; then
+  fail "robots.txt blocks the whole site"
+else
+  pass "robots.txt does not block the site"
+fi
+grep -q '<loc>https://gfp-engineering.com/</loc>' "$REPO_DIR/sitemap.xml" 2>/dev/null \
+  && pass "sitemap lists the homepage" || fail "sitemap.xml missing homepage <loc>"
+
+# Every root file must also be staged by the deploy workflow, or it never reaches the site.
+for f in robots.txt sitemap.xml llms.txt 404.html favicon.svg; do
+  grep -q "cp .*$f" "$REPO_DIR/.github/workflows/deploy.yml" 2>/dev/null \
+    && pass "deploy workflow stages $f" || fail "deploy workflow does not copy $f"
+done
+
+# Head metadata
+grep -q '<meta name="description"' "$INDEX" && pass "has meta description" || fail "missing meta description"
+grep -q '<link rel="canonical"' "$INDEX" && pass "has canonical link" || fail "missing canonical link"
+
+# Structured data must be valid JSON (a syntax error silently disables it in search engines).
+if command -v node >/dev/null 2>&1; then
+  if node -e '
+    const s=require("fs").readFileSync(process.argv[1],"utf8");
+    const m=[...s.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)];
+    if(!m.length) process.exit(2);
+    m.forEach(x=>JSON.parse(x[1]));' "$INDEX"; then
+    pass "JSON-LD structured data parses"
+  else
+    fail "JSON-LD structured data missing or invalid"
+  fi
+else
+  echo "skip: node not available, JSON-LD not validated"
+fi
+
+# Heavy design-tool libraries must not load for regular visitors.
+if grep -qE '<script src="https://unpkg.com/(react|@babel)' "$INDEX"; then
+  fail "React/Babel loaded unconditionally — should load only inside the design tool frame"
+else
+  pass "design-tool libraries are not loaded for visitors"
+fi
+
 if [ "$FAIL" -ne 0 ]; then
   echo "Smoke test FAILED — refusing to deploy." >&2
   exit 1

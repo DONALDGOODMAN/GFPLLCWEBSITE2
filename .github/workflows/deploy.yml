@@ -28,7 +28,8 @@ jobs:
       - name: Stage site files
         run: |
           mkdir -p stage
-          cp index.html stage/
+          # Keep this list in sync with SITE_FILES in .claude/skills/deploy-cloudflare/scripts/deploy.sh
+          cp index.html 404.html robots.txt sitemap.xml llms.txt favicon.svg stage/
           cp -r assets stage/
 
       - name: Record current production deployment (for rollback)

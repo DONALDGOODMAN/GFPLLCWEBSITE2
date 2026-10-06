@@ -1,0 +1,7 @@
+# robots.txt for gfp-engineering.com (GFP, LLC)
+# Search engines and AI assistants are welcome to read this site.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://gfp-engineering.com/sitemap.xml
