@@ -505,3 +505,28 @@ form.cform { display: grid; gap: 0; }
   .why-cell .ico { top: 32px; right: 26px; }
   .cinfo .v { font-size: 17px; }
 }
+
+/* ====================================================================== */
+/* EXPERT WITNESS                                                         */
+/* ====================================================================== */
+.expert { background: var(--paper-2); }
+.xw-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 64px; }
+.xw-h {
+  font-family: var(--ff-mono); font-size: 11px; font-weight: 400; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--signal); padding-bottom: 16px; border-bottom: 2px solid var(--ink);
+}
+.xw-foot {
+  display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center;
+  margin-top: 56px; padding: 36px 40px; background: var(--paper); border-left: 3px solid var(--signal);
+}
+.xw-foot p { margin: 0; color: var(--text-muted); max-width: 72ch; line-height: 1.6; }
+.xw-foot strong { color: var(--text); font-weight: 600; }
+@media (max-width: 1000px) {
+  .xw-grid { grid-template-columns: 1fr; gap: 48px; }
+}
+@media (max-width: 720px) {
+  .xw-foot { grid-template-columns: 1fr; gap: 24px; padding: 28px 24px; }
+  .xw-foot .btn { justify-self: start; }
+  .xw-col .cap-row { grid-template-columns: 40px 1fr; gap: 6px 14px; }
+  .xw-col .cap-row .cs { grid-column: 2; }
+}
